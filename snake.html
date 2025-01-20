@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+    <script>
+   // Création et configuration du canvas
+const canvas = document.createElement('canvas');
+const ctx = canvas.getContext('2d');
+canvas.width = 500; // Largeur plus grande
+canvas.height = 500; // Hauteur plus grande
+canvas.style.display = 'block';
+canvas.style.margin = '50px auto'; // Centrer le canvas
+canvas.style.border = '5px solid black';
+document.body.appendChild(canvas);
+
+// Configuration du jeu
+const gridSize = 30; // Taille d'une cellule augmentée
+defaultDirection = 'RIGHT';
+let snake = [{ x: 300, y: 300 }];
+let direction = defaultDirection;
+let food = generateFood();
+let score = 0;
+let bestScore = localStorage.getItem('bestScore') || 0; // Récupérer le meilleur score sauvegardé
+let isPaused = false; // État de pause
+
+// Générer un emplacement aléatoire pour la nourriture
+function generateFood() {
+    return {
+        x: Math.floor((Math.random() * canvas.width) / gridSize) * gridSize,
+        y: Math.floor((Math.random() * canvas.height) / gridSize) * gridSize
+    };
+}
+
+// Gérer le déplacement du serpent
+function moveSnake() {
+    const head = { ...snake[0] };
+
+    switch (direction) {
+        case 'UP':
+            head.y -= gridSize;
+            break;
+        case 'DOWN':
+            head.y += gridSize;
+            break;
+        case 'LEFT':
+            head.x -= gridSize;
+            break;
+        case 'RIGHT':
+            head.x += gridSize;
+            break;
+    }
+
+    // Ajouter la nouvelle tête
+    snake.unshift(head);
+
+    // Vérifier si le serpent a mangé la nourriture
+    if (head.x === food.x && head.y === food.y) {
+        score++;
+        food = generateFood();
+    } else {
+        // Retirer la queue si aucune nourriture n'est mangée
+        snake.pop();
+    }
+}
+
+// Vérifier les collisions
+function checkCollision() {
+    const head = snake[0];
+
+    // Collision avec les bords
+    if (head.x < 0 || head.x >= canvas.width || head.y < 0 || head.y >= canvas.height) {
+        return true;
+    }
+
+    // Collision avec le corps
+    for (let i = 1; i < snake.length; i++) {
+        if (head.x === snake[i].x && head.y === snake[i].y) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+// Dessiner le serpent et la nourriture
+function draw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    // Dessiner l'arrière-plan
+    ctx.fillStyle = 'green';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    // Dessiner les bordures
+    ctx.fillStyle = 'brown';
+    ctx.fillRect(0, 0, canvas.width, 10); // Bordure supérieure
+    ctx.fillRect(0, 0, 10, canvas.height); // Bordure gauche
+    ctx.fillRect(canvas.width - 10, 0, 10, canvas.height); // Bordure droite
+    ctx.fillRect(0, canvas.height - 10, canvas.width, 10); // Bordure inférieure
+
+    // Dessiner le serpent
+    ctx.fillStyle = 'red';
+    snake.forEach(segment => {
+        ctx.fillRect(segment.x, segment.y, gridSize, gridSize);
+    });
+
+    // Dessiner la nourriture en cercle jaune
+    ctx.fillStyle = 'yellow';
+    ctx.beginPath();
+    ctx.arc(food.x + gridSize / 2, food.y + gridSize / 2, gridSize / 2, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Afficher le score actuel
+    ctx.fillStyle = 'black';
+    ctx.font = '20px Arial';
+    ctx.fillText(`Score: ${score}`, 10, 30);
+
+    // Afficher le meilleur score
+    ctx.fillText(`Best: ${bestScore}`, canvas.width - 100, 30);
+
+    // Afficher l'état de pause
+    if (isPaused) {
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = 'white';
+        ctx.font = '40px Arial';
+        ctx.textAlign = 'center';
+        ctx.fillText('Paused', canvas.width / 2, canvas.height / 2);
+    }
+}
+
+// Gestion des contrôles
+window.addEventListener('keydown', e => {
+    switch (e.key) {
+        case 'ArrowUp':
+            if (!isPaused && direction !== 'DOWN') direction = 'UP';
+            break;
+        case 'ArrowDown':
+            if (!isPaused && direction !== 'UP') direction = 'DOWN';
+            break;
+        case 'ArrowLeft':
+            if (!isPaused && direction !== 'RIGHT') direction = 'LEFT';
+            break;
+        case 'ArrowRight':
+            if (!isPaused && direction !== 'LEFT') direction = 'RIGHT';
+            break;
+        case 'Escape':
+            isPaused = !isPaused; // Basculer l'état de pause
+            break;
+    }
+});
+
+// Boucle principale
+function gameLoop() {
+    if (!isPaused) {
+        moveSnake();
+
+        if (checkCollision()) {
+            // Mettre à jour le meilleur score si nécessaire
+            if (score > bestScore) {
+                bestScore = score;
+                localStorage.setItem('bestScore', bestScore); // Sauvegarder le meilleur score
+            }
+
+            alert(`Game Over! Your score: ${score}`);
+            snake = [{ x: 300, y: 300 }];
+            direction = defaultDirection;
+            score = 0;
+            food = generateFood();
+        }
+    }
+
+    draw();
+}
+
+setInterval(gameLoop, 100);
+
+    </script>
+</body>
+</html>
